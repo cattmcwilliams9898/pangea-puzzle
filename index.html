@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pangaea Pro — Continental Drift Puzzle</title>
+<style>
+:root{--ink:#18344b;--blue:#245a7a;--sky:#eaf4fa;--gold:#f0b34d;--green:#39865b;--red:#bf5148;--line:#c6d8e5}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(135deg,#eef7fb,#f7f8f4);color:var(--ink);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:clamp(12px,3vw,28px)}
+header{display:flex;gap:16px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+h1{font-size:clamp(24px,4vw,38px);margin:0;letter-spacing:-.03em}
+.subtitle{color:#58748a;margin:4px 0 0}
+.badge{background:#dcecf6;border-radius:999px;padding:8px 12px;font-weight:800}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(100px,1fr));gap:10px;margin:12px 0}
+.metric{background:white;border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center;box-shadow:0 3px 10px #18344b0a}
+.metric small{display:block;text-transform:uppercase;letter-spacing:.07em;color:#6a8395;font-weight:700}
+.metric strong{display:block;font-size:clamp(20px,3vw,26px)}
+.game-panel{background:white;border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 8px 28px #18344b0d}
+.board-wrap{background:linear-gradient(#dff0f7,#d4e8e9);padding:8px}
+svg#board{display:block;width:100%;height:auto;touch-action:manipulation}
+.board-note{padding:0 14px 12px;color:#627d90;font-size:13px}
+.controls,.settings{display:flex;flex-wrap:wrap;gap:8px;padding:12px}
+button,select{font:inherit;border:1px solid #c6d8e5;border-radius:10px;padding:10px 13px;background:white;color:var(--ink}
+);font-weight:750}
+button{cursor:pointer}
+button.primary{background:var(--blue);color:white;border-color:var(--blue)}
+button.soft{background:#edf5fa}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible,select:focus-visible{outline:3px solid #f0b34d;outline-offset:2px}
+.feedback{margin:0 12px 12px;padding:12px;border-radius:12px;background:#f2f6f9;min-height:48px;font-weight:700}
+.feedback.good{background:#e5f4e9;color:#28633e}
+.feedback.bad{background:#fff0e8;color:#8c3e31}
+.pieces-area{padding:0 12px 14px}
+.pieces-area h2,.settings h2{font-size:17px;margin:8px 0}
+.pieces{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:9px}
+.piece{background:#f9fcfe;border:2px solid transparent;border-radius:13px;min-height:115px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;touch-action:manipulation}
+.piece.selected{border-color:var(--gold);background:#fff8e8;box-shadow:0 0 0 2px #f0b34d55}
+.piece svg{width:82px;height:68px;overflow:visible}
+.piece span{font-size:12px;text-align:center;font-weight:800}
+.piece.placed{display:none}
+.settings{border-top:1px solid var(--line);background:#f9fcfe}
+.settings>div{flex:1;min-width:180px}
+.settings label{display:block;font-size:12px;font-weight:800;color:#5c768a;margin-bottom:4px}
+.settings select{width:100%}
+.teacher-tools{padding:12px;border-top:1px solid var(--line)}
+.teacher-tools summary{font-weight:850;cursor:pointer}
+.teacher-tools p{font-size:13px;color:#5b7488}
+.finish{display:none;margin:12px;padding:14px;border-radius:14px;background:#e5f4e9;color:#28633e}
+.finish.show{display:block}
+.footer-tip{font-size:13px;color:#637d91;margin:12px 4px 0}
+.slot{cursor:pointer}
+.slot .outline{fill:#fff6;stroke:#688ba3;stroke-width:2.2;stroke-dasharray:6 5;stroke-linejoin:round}
+.slot text{font-size:15px;font-weight:800;fill:#52758b;text-anchor:middle;pointer-events:none}
+.slot.correct .outline{fill:#bfe2c8;stroke:#39865b;stroke-dasharray:none}
+.slot.correct text{fill:#27633e}
+.slot.wrong .outline{fill:#f7d9d3;stroke:#bf5148}
+@media(max-width:600px){main{padding:10px}.metrics{gap:6px}.metric{padding:7px}.pieces{grid-template-columns:repeat(2,minmax(120px,1fr))}.piece{min-height:100px}.controls button{flex:1}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div>
+    <h1>🌎 Pangaea Pro</h1>
+    <p class="subtitle">Rebuild Earth's ancient supercontinent—one continent at a time.</p>
+  </div>
+  <div class="badge" id="levelBadge">Level 1 · Explorer</div>
+</header>
+
+<div class="metrics">
+  <div class="metric"><small>Time</small><strong id="timer">03:00</strong></div>
+  <div class="metric"><small>Continents placed</small><strong id="score">0 / 7</strong></div>
+  <div class="metric"><small>Hints used</small><strong id="hintCount">0</strong></div>
+</div>
+
+<section class="game-panel" aria-label="Pangaea puzzle game">
+  <div class="board-wrap">
+    <svg id="board" viewBox="0 0 900 560" role="img" aria-label="Puzzle board with continent target outlines">
+      <defs>
+        <pattern id="waterDots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="1.2" fill="#91b7c9" opacity=".35"/></pattern>
+      </defs>
+      <rect width="900" height="560" rx="14" fill="url(#waterDots)"/>
+      <text x="450" y="535" font-size="14" text-anchor="middle" fill="#6b899e" letter-spacing="2">ANCIENT EARTH · CONTINENT RECONSTRUCTION</text>
+      <g id="slotsLayer"></g>
+    </svg>
+  </div>
+  <div class="board-note">Select a piece, then tap its matching outline—or drag the piece onto an outline. On touch screens, tapping is the easiest option.</div>
+  <div class="feedback" id="feedback" role="status" aria-live="polite">Choose a continent piece to start. You can use the timer as a challenge or turn it off.</div>
+  <div class="pieces-area">
+    <h2>Continents</h2>
+    <div class="pieces" id="pieces"></div>
+  </div>
+  <div class="controls">
+    <button class="primary" id="restart">↻ Restart level</button>
+    <button class="soft" id="hintBtn">💡 Hint</button>
+    <button class="primary" id="nextBtn" hidden>Next level →</button>
+  </div>
+  <div class="finish" id="finishBox">
+    <h2 id="finishTitle">🏆 Level complete!</h2>
+    <p id="finishText"></p>
+  </div>
+  <div class="settings" id="settings">
+    <div>
+      <label for="mode">Teacher challenge</label>
+      <select id="mode">
+        <option value="standard">Standard play</option>
+        <option value="team">Team relay (take turns)</option>
+        <option value="silent">Silent challenge</option>
+        <option value="teacher">Teacher challenge (Level 3, no labels)</option>
+      </select>
+    </div>
+    <div>
+      <label for="timeChoice">Timer setting</label>
+      <select id="timeChoice">
+        <option value="180">3 minutes</option>
+        <option value="120">2 minutes</option>
+        <option value="60">1 minute</option>
+        <option value="0">No timer</option>
+      </select>
+    </div>
+    <div style="align-self:end">
+      <button class="primary" id="applySettings" style="width:100%">Apply challenge settings</button>
+    </div>
+  </div>
+  <div class="teacher-tools">
+    <details>
+      <summary>Teacher notes &amp; challenge ideas</summary>
+      <p><b>Team Relay:</b> Students alternate turns choosing a continent. If incorrect, the team discusses the clue before the next player tries.</p>
+      <p><b>Silent Challenge:</b> No verbal communication; teams use gestures or written strategy.</p>
+      <p><b>Teacher Challenge:</b> Use Level 3 and no hints. After each placement, ask students to name evidence supporting the fit (fossils, rock formations, or coastline shapes).</p>
+      <p><b>Empowered Principles connection:</b> Knowledge, Sound Judgment, Responsibility, Integrity, Win-Win Focus, Passion, Freedom, and Opportunity.</p>
+    </details>
+  </div>
+</section>
+<p class="footer-tip">Tip: A puzzle mistake is useful information—try a new strategy and keep going!</p>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const names = ["North America","South America","Africa","Europe","Asia","Antarctica","Australia"];
+  const colors = ["#e7a34c","#e98765","#64a979","#a98bc8","#d9c45f","#72b7c7","#dc7a86"];
+  // Simplified but recognizable SVG continent silhouettes, normalized to 100x100.
+  const paths = [
+    "M12 15 L29 7 L45 9 L58 17 L72 18 L83 31 L76 42 L65 46 L59 58 L47 55 L39 65 L28 59 L20 49 L9 43 L6 29 Z",
+    "M30 4 L46 10 L56 22 L53 36 L48 49 L42 63 L37 79 L28 96 L20 82 L17 65 L11 51 L13 37 L18 21 Z",
+    "M22 7 L43 9 L58 20 L62 34 L55 46 L51 59 L44 73 L35 90 L25 83 L17 67 L10 53 L8 35 L13 20 Z",
+    "M15 20 L28 10 L43 12 L55 17 L64 28 L58 39 L47 43 L38 39 L30 46 L19 40 L9 31 Z",
+    "M7 24 L17 15 L31 8 L47 9 L61 13 L77 20 L90 30 L84 42 L72 48 L63 45 L54 54 L42 50 L33 58 L23 47 L13 41 L7 34 Z",
+    "M7 27 L17 18 L29 20 L41 16 L54 18 L66 15 L80 22 L74 31 L61 34 L48 30 L35 37 L21 35 L10 33 Z",
+    "M14 29 L26 16 L39 13 L53 18 L68 27 L75 36 L69 48 L57 54 L45 49 L33 48 L22 42 L10 36 Z"
+  ];
+  // Positions use Pangaea-style arrangement: North America upper-left, South America
+  // below it, Europe/Asia upper-right, Africa central, Antarctica along the south.
+  const placements = [
+    {x:120,y:95,w:185,h:150},   // North America
+    {x:245,y:245,w:125,h:195},  // South America
+    {x:395,y:230,w:150,h:185},  // Africa
+    {x:410,y:115,w:115,h:105},  // Europe
+    {x:525,y:110,w:230,h:170},  // Asia
+    {x:345,y:435,w:360,h:60},   // Antarctica
+    {x:670,y:300,w:125,h:110}   // Australia
+  ];
+  const levelNames = ["Explorer","Geographer","Continental Champion"];
+  let level = 1, selected = null, placed = new Set(), hintsUsed = 0;
+  let timerSeconds = 180, configuredTime = 180, timerId = null, clockStarted = false;
+  let gameEnded = false, labelsOnBoard = true, challengeMode = "standard";
+
+  function setFeedback(text, kind="") { const el=$("feedback"); el.textContent=text; el.className="feedback"+(kind?" "+kind:""); }
+  function timeText(sec){ if(configuredTime===0) return "∞"; sec=Math.max(0,sec); return `${String(Math.floor(sec/60)).padStart(2,"0")}:${String(sec%60).padStart(2,"0")}`; }
+  function updateTimer(){ $("timer").textContent=timeText(timerSeconds); $("timer").style.color=(configuredTime!==0 && timerSeconds<=20)?"#bf5148":""; }
+  function updateScore(){ $("score").textContent=`${placed.size} / 7`; }
+  function updateBadge(){ $("levelBadge").text=`Level ${level} · ${levelNames[level-1]}`; }
+  function levelDuration(){ if(configuredTime===0) return 0; return Math.max(30,configuredTime-(level-1)*30); }
+  function resetTimer(){ clearInterval(timerId); timerId=null; clockStarted=false; timerSeconds=levelDuration(); updateTimer(); }
+  function startTimer(){ if(clockStarted||configuredTime===0||gameEnded) return; clockStarted=true; timerId=setInterval(()=>{timerSeconds--;updateTimer();if(timerSeconds<=0){clearInterval(timerId);timerId=null;gameEnded=true;setFeedback("⏰ Time is up! Restart the level to try again.","bad");$("pieces").querySelectorAll("button").forEach(b=>b.disabled=true);}},1000); }
+  function slotMarkup(i,p){
+    const label=(level===1 || labelsOnBoard)?names[i]:"";
+    const g=document.createElementNS("http://www.w3.org/2000/svg","g");
+    g.setAttribute("class","slot");g.setAttribute("data-slot",i);
+    const path=document.createElementNS("http://www.w3.org/2000/svg","path");
+    path.setAttribute("class","outline");path.setAttribute("d",paths[i]);
+    path.setAttribute("transform",`translate(${p.x} ${p.y}) scale(${p.w/100} ${p.h/100})`);
+    g.appendChild(path);
+    if(label){
+      const text=document.createElementNS("http://www.w3.org/2000/svg","text");
+      text.setAttribute("x",p.x+p.w/2);text.setAttribute("y",p.y+p.h+18);text.textContent=label;g.appendChild(text);
+    }
+    g.addEventListener("click",()=>attempt(i));
+    g.addEventListener("dragover",e=>e.preventDefault());
+    g.addEventListener("drop",e=>{e.preventDefault();const idx=Number(e.dataTransfer.getData("text/piece"));selectPiece(idx);attempt(i);});
+    return g;
+  }
+  function buildBoard(){
+    const layer=$("slotsLayer");layer.innerHTML="";
+    placements.forEach((p,i)=>layer.appendChild(slotMarkup(i,p)));
+  }
+  function pieceSVG(i){
+    return `<svg viewBox="0 0 100 100" aria-hidden="true"><path d="${paths[i]}" fill="${colors[i]}" stroke="#3c566a" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
+  }
+  function buildPieces(){
+    const tray=$("pieces");tray.innerHTML="";
+    const order=names.map((_,i)=>i).sort(()=>Math.random()-0.5);
+    order.forEach(i=>{
+      const b=document.createElement("button");b.className="piece";b.dataset.index=i;b.draggable=true;
+      const name=(level===1 || labelsOnBoard)?names[i]:"Continent piece";
+      b.innerHTML=pieceSVG(i)+`<span>${name}</span>`;
+      b.addEventListener("click",()=>selectPiece(i));
+      b.addEventListener("dragstart",e=>{e.dataTransfer.setData("text/piece",String(i));selectPiece(i);});
+      if(placed.has(i)){b.classList.add("placed");b.disabled=true;}
+      tray.appendChild(b);
+    });
+  }
+  function selectPiece(i){
+    if(gameEnded||placed.has(i)) return;
+    selected=i;
+    $("pieces").querySelectorAll(".piece").forEach(b=>b.classList.toggle("selected",Number(b.dataset.index)===i));
+    setFeedback(`Selected ${names[i]}. Now tap its matching outline on the board.`);
+  }
+  function attempt(slot){
+    if(gameEnded) return;
+    if(selected===null){setFeedback("Select a continent piece first.");return;}
+    startTimer();
+    if(selected===slot){
+      placed.add(slot);
+      const g=$("slotsLayer").querySelector(`[data-slot="${slot}"]`);
+      g.classList.add("correct");
+      // Replace target with filled continent silhouette
+      const path=g.querySelector("path");
+      path.setAttribute("class","outline");
+      path.setAttribute("fill",colors[slot]);
+      path.setAttribute("stroke","#39865b");
+      path.setAttribute("stroke-dasharray","none");
+      g.querySelector("text")?.remove();
+      const label=document.createElementNS("http://www.w3.org/2000/svg","text");
+      const p=placements[slot];label.setAttribute("x",p.x+p.w/2);label.setAttribute("y",p.y+p.h+18);label.textContent=names[slot]+" ✓";g.appendChild(label);
+      const piece=$("pieces").querySelector(`[data-index="${slot}"]`);piece?.classList.add("placed");piece.disabled=true;
+      selected=null;updateScore();setFeedback(`Correct! ${names[slot]} is placed. Great use of observation and strategy!`,"good");
+      if(placed.size===7) win();
+    } else {
+      const g=$("slotsLayer").querySelector(`[data-slot="${slot}"]`);g.classList.add("wrong");setTimeout(()=>g.classList.remove("wrong"),450);
+      setFeedback("Not quite. Compare the silhouette and the surrounding continents. Try again!");
+    }
+  }
+  function win(){
+    gameEnded=true;clearInterval(timerId);timerId=null;
+    $("finishBox").classList.add("show");
+    $("finishTitle").textContent=level===3?"🏆 Continental Champion!":"🎉 Level complete!";
+    $("finishText").textContent=`You placed all seven continents! Time remaining: ${configuredTime===0?"timer off":timeText(timerSeconds)}. Hints used: ${hintsUsed}.`;
+    if(level<3){$("nextBtn").hidden=false;$("nextBtn").textContent=`Unlock Level ${level+1} →`;}
+    else{$("nextBtn").hidden=true;}
+    setFeedback("Pangaea reconstructed! Think about the evidence that continents were once connected.","good");
+  }
+  function restart(){
+    placed=new Set();selected=null;gameEnded=false;hintsUsed=0;
+    $("hintCount").textContent="0";$("finishBox").classList.remove("show");$("nextBtn").hidden=true;
+    resetTimer();updateScore();updateBadge();buildBoard();buildPieces();
+    setFeedback("Choose a continent piece to start.");
+  }
+  function advance(){if(level<3){level++;labelsOnBoard=(level===1);restart();}}
+  $("restart").addEventListener("click",restart);
+  $("nextBtn").addEventListener("click",advance);
+  $("hintBtn").addEventListener("click",()=>{
+    if(selected===null){setFeedback("Select a piece first to get a hint.");return;}
+    const hints=[
+      "North America fits northwest of South America, near Europe and north of Africa.",
+      "South America hangs south of North America and fits beside Africa's western edge.",
+      "Africa is near the middle of the reconstruction and fits beside South America.",
+      "Europe is north of Africa and west of Asia.",
+      "Asia is the broad landmass east of Europe.",
+      "Antarctica stretches along the southern edge of the arrangement.",
+      "Australia sits southeast of Asia."
+    ];
+    hintsUsed++;$("hintCount").textContent=String(hintsUsed);setFeedback("💡 "+hints[selected]);
+  });
+  $("applySettings").addEventListener("click",()=>{
+    challengeMode=$("mode").value;configuredTime=Number($("timeChoice").value);
+    if(challengeMode==="teacher"){level=3;labelsOnBoard=false;}
+    else if(challengeMode==="silent"){level=2;labelsOnBoard=false;}
+    else {level=1;labelsOnBoard=true;}
+    restart();
+    const modeText=$("mode").selectedOptions[0].textContent;
+    setFeedback(`Challenge applied: ${modeText}. Timer: ${configuredTime===0?"off":configuredTime/60+" minute(s)"}. Start when ready.`);
+  });
+  restart();
+})();
+</script>
+</body>
+</html>
